@@ -1,0 +1,11 @@
+{
+	"prettier.semi": true,
+	"prettier.useTabs": true,
+	"prettier.singleQuote": true,
+	"prettier.arrowParens": "avoid",
+	"editor.formatOnSave": true,
+	"editor.codeActionsOnSave": {
+		"source.addMissingImports": true,
+		"source.organizeImports": true
+	}
+}
