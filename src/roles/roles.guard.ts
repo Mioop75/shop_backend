@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { FastifyRequest } from "fastify";
-import { PrismaService } from "src/prisma.service";
+import { PrismaService } from "../prisma.service";
 import { ROLES_KEY } from "./roles.decorator";
 import { Role } from "./roles.enum";
 

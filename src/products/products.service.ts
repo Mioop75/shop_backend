@@ -3,7 +3,9 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { PrismaService } from "src/prisma.service";
+import { unlink } from "fs/promises";
+import { substractArrays } from "src/shared/utils/substract-arrays.util";
+import { PrismaService } from "../prisma.service";
 import { InputProductDto } from "./dtos/input-product.dto";
 
 @Injectable()
@@ -29,8 +31,13 @@ export class ProductsService {
     return user;
   }
 
-  async createProduct(dto: InputProductDto, sid: string) {
-    const user = await this.prisma.user_Sessions.findFirst({ where: { sid } });
+  async createProduct(
+    dto: InputProductDto,
+    userId: number,
+    photos?: Express.Multer.File[],
+    img?: Express.Multer.File,
+  ) {
+    const user = await this.prisma.user.findFirst({ where: { id: userId } });
 
     if (!user) {
       throw new NotFoundException("User hasn't been found");
@@ -46,7 +53,12 @@ export class ProductsService {
 
     const product = await this.prisma.product
       .create({
-        data: { ...dto, user_id: user.user_id },
+        data: {
+          ...dto,
+          user_id: user.id,
+          image: img?.path,
+          photos: photos?.map(({ path }) => path),
+        },
       })
       .catch(() => {
         throw new BadRequestException("Product with this name already exists");
@@ -55,24 +67,82 @@ export class ProductsService {
     return product;
   }
 
-  async deleteProduct(productId: number, sid: string) {
-    const session = await this.prisma.user_Sessions.findFirst({
-      where: { sid },
-      include: { user: { include: { role: true } } },
+  async updateProduct(
+    dto: InputProductDto,
+    userId: number,
+    photos?: Express.Multer.File[],
+    img?: Express.Multer.File,
+  ) {
+    const user = await this.prisma.user.findFirst({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException("User hasn't been found");
+    }
+
+    const oldProduct = await this.prisma.product.findFirst({
+      where: { name: dto.name },
+    });
+
+    if (oldProduct?.image && oldProduct?.image !== img.path) {
+      await unlink(oldProduct.image);
+    }
+
+    await Promise.allSettled(
+      substractArrays(
+        oldProduct.photos.map((photo) => photo),
+        photos.map(({ path }) => path),
+      ).map(async (photo) => await unlink(photo)),
+    );
+
+    if (oldProduct) {
+      throw new BadRequestException("Product already exists");
+    }
+
+    if (oldProduct.user_id !== user.id) {
+      throw new BadRequestException("This isn't your product");
+    }
+
+    const product = await this.prisma.product
+      .update({
+        where: { id: oldProduct.id },
+        data: {
+          ...dto,
+          image: img?.path,
+          photos: photos?.map(({ path }) => path),
+        },
+      })
+      .catch(() => {
+        throw new BadRequestException("Product with this name already exists");
+      });
+
+    return product;
+  }
+
+  async deleteProduct(productId: number, userId: number) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: { role: true },
     });
 
     const product = await this.prisma.product.findFirst({
       where: { id: productId },
     });
 
+    if (product?.image) {
+      await unlink(product.image);
+    }
+
+    await Promise.allSettled(
+      product.photos.map((photo) => {
+        unlink(photo);
+      }),
+    );
+
     if (!product) {
       throw new NotFoundException("Product hasn't been found");
     }
 
-    if (
-      session.user.role.name !== "Admin" &&
-      session.user_id !== product.user_id
-    ) {
+    if (user.role.name !== "Admin") {
       throw new BadRequestException(
         "This isn't your product or you aren't admin",
       );

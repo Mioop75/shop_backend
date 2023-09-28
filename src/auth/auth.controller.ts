@@ -1,12 +1,14 @@
 import { Body, Controller, Get, Post, Res, UseGuards } from "@nestjs/common";
+import { ApiTags } from "@nestjs/swagger";
 import { plainToInstance } from "class-transformer";
 import { FastifyReply } from "fastify";
-import { UserDto } from "src/users/dtos/user.dto";
+import { UserDto } from "../users/dtos/user.dto";
 import { AuthDto } from "./auth.dto";
 import { AuthGuard } from "./auth.guard";
 import { AuthService } from "./auth.service";
 import { Cookies } from "./cookie.decorator";
 
+@ApiTags("auth")
 @Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -22,6 +24,7 @@ export class AuthController {
       signed: true,
       httpOnly: true,
       maxAge: 42000,
+      secure: true,
     });
     return plainToInstance(UserDto, user);
   }
@@ -37,6 +40,7 @@ export class AuthController {
       signed: true,
       httpOnly: true,
       maxAge: 42000,
+      secure: true,
     });
     return plainToInstance(UserDto, user);
   }

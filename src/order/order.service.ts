@@ -3,9 +3,8 @@ import {
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
-import { PrismaService } from "src/prisma.service";
 import * as YooKassa from "yookassa";
+import { PrismaService } from "../prisma.service";
 import { CreateOrderDto } from "./dtos/create-order.dto";
 
 const yooKassa = new YooKassa({
@@ -17,13 +16,19 @@ const yooKassa = new YooKassa({
 export class OrderService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getMyOrders(sid: string) {}
+  async getMyOrders(userId: number) {
+    const orders = await this.prisma.order.findFirst({
+      where: { user_id: userId },
+      include: { orders_items: { include: { product: true } } },
+    });
+    return orders;
+  }
 
-  async addCart(sid: string, dto: CreateOrderDto) {
+  async addCart(userId: number, dto: CreateOrderDto) {
     // Again change method
 
-    const session = await this.prisma.user_Sessions.findFirst({
-      where: { sid },
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
     });
 
     const products = await this.prisma.product.findMany({
@@ -45,7 +50,7 @@ export class OrderService {
     }, 0);
 
     const order = await this.prisma.order.create({
-      data: { user_id: session.user_id, total },
+      data: { user_id: user.id, total },
     });
 
     await this.prisma.order_Item.createMany({
@@ -58,20 +63,24 @@ export class OrderService {
     return "Product has been added to your cart";
   }
 
-  async createPayment(sid: string, orderId: number) {
-    const include: Prisma.User_SessionsInclude = {
-      user: {
-        include: {
-          Order: {
-            include: { orders_items: { include: { product: true } } },
-          },
-        },
-      },
-    };
+  async deleteOrder(orderId: number) {
+    const order = await this.prisma.order.findFirst({ where: { id: orderId } });
 
-    const session = await this.prisma.user_Sessions.findFirst({
-      where: { sid },
-      include: include,
+    if (order.status !== "Pending") {
+      throw new BadRequestException(
+        "You can't delete order with status Payed or Rejected",
+      );
+    }
+
+    return "Order has been deleted";
+  }
+
+  async createPayment(userId: number, orderId: number) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      include: {
+        Order: true,
+      },
     });
 
     const order = await this.prisma.order.findFirst({
@@ -79,7 +88,7 @@ export class OrderService {
       include: { orders_items: true },
     });
 
-    if (session.user_id !== order.user_id) {
+    if (user.id !== order.user_id) {
       throw new UnauthorizedException("You aren't logged");
     }
 

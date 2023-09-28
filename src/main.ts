@@ -9,6 +9,8 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from "@nestjs/platform-fastify";
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import { contentParser } from "fastify-multer";
 import { AppModule } from "./app.module";
 import { PrismaService } from "./prisma.service";
 
@@ -27,6 +29,7 @@ async function bootstrap() {
   app.register(fastifyHelmet);
   app.register(fastifyCsrfProtection);
   app.register(fastifyCors, { credentials: true });
+  app.register(contentParser);
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -44,6 +47,16 @@ async function bootstrap() {
   );
 
   app.setGlobalPrefix("api");
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle("Shop")
+    .setDescription("The api shop")
+    .setVersion("1.0")
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup("api", app, document);
+
   await app.listen(PORT, "0.0.0.0", async () =>
     console.log(`Server is running on: ${await app.getUrl()}`),
   );

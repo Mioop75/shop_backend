@@ -1,7 +1,7 @@
 import { Expose } from "class-transformer";
 import { IsString } from "class-validator";
 import { ProductDto } from "src/products/dtos/product.dto";
-import { UserDto } from "src/users/dtos/user.dto";
+import { UserDto } from "../../users/dtos/user.dto";
 
 export class OrderDto {
   @Expose()

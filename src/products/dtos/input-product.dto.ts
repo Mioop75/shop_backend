@@ -1,4 +1,4 @@
-import { PickType } from "@nestjs/mapped-types";
+import { PickType } from "@nestjs/swagger";
 import { ProductDto } from "./product.dto";
 
 export class InputProductDto extends PickType(ProductDto, [
@@ -6,4 +6,4 @@ export class InputProductDto extends PickType(ProductDto, [
   "available",
   "description",
   "price",
-]) {}
+] as const) {}

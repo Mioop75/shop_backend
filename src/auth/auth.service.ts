@@ -1,7 +1,8 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { compare } from "bcryptjs";
-import { PrismaService } from "src/prisma.service";
-import { UsersService } from "src/users/users.service";
+import { v4 } from "uuid";
+import { PrismaService } from "../prisma.service";
+import { UsersService } from "../users/users.service";
 import { AuthDto } from "./auth.dto";
 
 @Injectable()
@@ -14,7 +15,7 @@ export class AuthService {
   async register(dto: AuthDto) {
     const user = await this.usersService.createUser(dto, dto.roleId);
     const session = await this.prisma.user_Sessions.create({
-      data: { sid: `${Date.now()}${user.name}`, user_id: user.id },
+      data: { sid: v4(), user_id: user.id },
     });
     return { user: dto, sid: session.sid };
   }
@@ -29,7 +30,7 @@ export class AuthService {
     }
 
     const session = await this.prisma.user_Sessions.create({
-      data: { sid: `${Date.now()}${user.name}`, user_id: user.id },
+      data: { sid: v4(), user_id: user.id },
     });
 
     return { user: dto, sid: session.sid };

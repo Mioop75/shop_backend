@@ -1,7 +1,8 @@
+import { ApiProperty } from "@nestjs/swagger";
 import { Expose, Type } from "class-transformer";
 import { IsEmail, IsNumber, IsOptional, IsString } from "class-validator";
-import { ProductDto } from "src/products/dtos/product.dto";
-import { RoleDto } from "src/roles/dtos/role.dto";
+import { ProductDto } from "../../products/dtos/product.dto";
+import { RoleDto } from "../../roles/dtos/role.dto";
 
 export class UserDto {
   @Expose()
@@ -13,9 +14,11 @@ export class UserDto {
   @Expose()
   @IsString()
   @IsEmail()
+  @ApiProperty()
   email: string;
   @Expose()
   @IsString()
+  @ApiProperty()
   name: string;
   @Expose()
   @IsString()
