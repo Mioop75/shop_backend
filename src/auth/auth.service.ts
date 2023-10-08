@@ -15,9 +15,9 @@ export class AuthService {
   async register(dto: AuthDto) {
     const user = await this.usersService.createUser(dto, dto.roleId);
     const session = await this.prisma.user_Sessions.create({
-      data: { sid: v4(), user_id: user.id },
+      data: { sid: v4(), user_id: user.id, expires: new Date(42000) },
     });
-    return { user: dto, sid: session.sid };
+    return { user, sid: session.sid };
   }
 
   async login(dto: Pick<AuthDto, "name" | "password">) {
@@ -30,14 +30,23 @@ export class AuthService {
     }
 
     const session = await this.prisma.user_Sessions.create({
-      data: { sid: v4(), user_id: user.id },
+      data: { sid: v4(), user_id: user.id, expires: new Date(42000) },
     });
 
-    return { user: dto, sid: session.sid };
+    return { user, sid: session.sid };
   }
 
   async logout(sid: string) {
     await this.prisma.user_Sessions.delete({ where: { sid } });
     return "Session was deleted";
+  }
+
+  async getMe(sid: string) {
+    const session = await this.prisma.user_Sessions.findFirst({
+      where: { sid },
+      include: { user: { include: { role: true } } },
+    });
+
+    return { user: session.user };
   }
 }

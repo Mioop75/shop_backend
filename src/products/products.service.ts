@@ -19,24 +19,21 @@ export class ProductsService {
   }
 
   async getOne(productId: number) {
-    const user = await this.prisma.product.findFirst({
+    const product = await this.prisma.product.findFirst({
       where: { id: productId },
       include: { author: true },
     });
 
-    if (!user) {
+    console.log(product);
+
+    if (!product) {
       throw new NotFoundException("Product hasn't been found");
     }
 
-    return user;
+    return product;
   }
 
-  async createProduct(
-    dto: InputProductDto,
-    userId: number,
-    photos?: Express.Multer.File[],
-    img?: Express.Multer.File,
-  ) {
+  async createProduct(dto: InputProductDto, userId: number) {
     const user = await this.prisma.user.findFirst({ where: { id: userId } });
 
     if (!user) {
@@ -56,8 +53,13 @@ export class ProductsService {
         data: {
           ...dto,
           user_id: user.id,
-          image: img?.path,
-          photos: photos?.map(({ path }) => path),
+          image: dto?.image,
+          photos: dto.photos?.map((photo) => photo),
+          categories: {
+            connect: dto.categories?.map((category) => ({
+              name: category,
+            })),
+          },
         },
       })
       .catch(() => {
@@ -67,12 +69,7 @@ export class ProductsService {
     return product;
   }
 
-  async updateProduct(
-    dto: InputProductDto,
-    userId: number,
-    photos?: Express.Multer.File[],
-    img?: Express.Multer.File,
-  ) {
+  async updateProduct(dto: InputProductDto, userId: number, productId: number) {
     const user = await this.prisma.user.findFirst({ where: { id: userId } });
 
     if (!user) {
@@ -80,17 +77,17 @@ export class ProductsService {
     }
 
     const oldProduct = await this.prisma.product.findFirst({
-      where: { name: dto.name },
+      where: { id: productId },
     });
 
-    if (oldProduct?.image && oldProduct?.image !== img.path) {
+    if (oldProduct?.image && oldProduct?.image !== dto?.image) {
       await unlink(oldProduct.image);
     }
 
     await Promise.allSettled(
       substractArrays(
         oldProduct.photos.map((photo) => photo),
-        photos.map(({ path }) => path),
+        dto.photos.map((photo) => photo),
       ).map(async (photo) => await unlink(photo)),
     );
 
@@ -107,8 +104,13 @@ export class ProductsService {
         where: { id: oldProduct.id },
         data: {
           ...dto,
-          image: img?.path,
-          photos: photos?.map(({ path }) => path),
+          image: dto?.image,
+          photos: dto.photos?.map((photo) => photo),
+          categories: {
+            connect: dto.categories?.map((category) => ({
+              name: category,
+            })),
+          },
         },
       })
       .catch(() => {
@@ -151,5 +153,9 @@ export class ProductsService {
     await this.prisma.product.delete({ where: { id: product.id } });
 
     return "Product has been deleted";
+  }
+
+  sendImage(img: Express.Multer.File) {
+    return img;
   }
 }

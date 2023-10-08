@@ -4,14 +4,14 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   UploadedFile,
-  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
-import { ApiBody, ApiTags } from "@nestjs/swagger";
+import { ApiTags } from "@nestjs/swagger";
 import { plainToInstance } from "class-transformer";
 import { InjectUserInterceptor } from "src/shared/interceptors/InjectUser.interceptor";
 import { CurrentUser } from "src/users/user.decorator";
@@ -19,11 +19,8 @@ import { AuthGuard } from "../auth/auth.guard";
 import { Roles } from "../roles/roles.decorator";
 import { Role } from "../roles/roles.enum";
 import { RolesGuard } from "../roles/roles.guard";
-import { ApiMultiFile } from "../shared/decorators/api-multer.decorator";
-import {
-  UploadFileInterceptor,
-  UploadFilesInterceptor,
-} from "../shared/interceptors/upload-file.interceptor";
+import { UploadFileInterceptor } from "../shared/interceptors/upload-file.interceptor";
+import { ImageDto } from "./dtos/image.dto";
 import { InputProductDto } from "./dtos/input-product.dto";
 import { ProductDto } from "./dtos/product.dto";
 import { ProductsService } from "./products.service";
@@ -48,78 +45,27 @@ export class ProductsController {
 
   @Post()
   @UseGuards(AuthGuard, RolesGuard)
-  @ApiBody({
-    type: "multipart/form-data",
-    required: true,
-    schema: {
-      type: "object",
-      properties: {
-        img: {
-          type: "string",
-          format: "binary",
-        },
-      },
-    },
-  })
-  @ApiMultiFile("photos")
-  @UseInterceptors(
-    UploadFileInterceptor("img", { dest: "uploads/products/img/[YYYY]/[MM]" }),
-    UploadFilesInterceptor("photos", 8, {
-      dest: "uploads/products/photos/[YYYY]/MM",
-    }),
-    InjectUserInterceptor,
-  )
   @Roles(Role.Seller)
   async createProduct(
     @CurrentUser("id") userId: number,
     @Body() dto: InputProductDto,
-    @UploadedFile() img: Express.Multer.File,
-    @UploadedFiles() photos: Express.Multer.File[],
   ) {
-    const product = await this.productsService.createProduct(
-      dto,
-      userId,
-      photos,
-      img,
-    );
+    const product = await this.productsService.createProduct(dto, userId);
     return plainToInstance(ProductDto, product);
   }
 
-  @Put()
+  @Put(":id")
   @UseGuards(AuthGuard, RolesGuard)
-  @ApiBody({
-    type: "multipart/form-data",
-    required: true,
-    schema: {
-      type: "object",
-      properties: {
-        img: {
-          type: "string",
-          format: "binary",
-        },
-      },
-    },
-  })
-  @ApiMultiFile("photos")
-  @UseInterceptors(
-    UploadFileInterceptor("img", { dest: "uploads/products/img/[YYYY]/[MM]" }),
-    UploadFilesInterceptor("photos", 8, {
-      dest: "uploads/products/photos/[YYYY]/MM",
-    }),
-    InjectUserInterceptor,
-  )
   @Roles(Role.Seller)
   async updateProduct(
     @CurrentUser("id") userId: number,
     @Body() dto: InputProductDto,
-    @UploadedFile() img: Express.Multer.File,
-    @UploadedFiles() photos: Express.Multer.File[],
+    @Param("id", ParseIntPipe) productId: number,
   ) {
     const product = await this.productsService.updateProduct(
       dto,
       userId,
-      photos,
-      img,
+      productId,
     );
     return plainToInstance(ProductDto, product);
   }
@@ -133,5 +79,18 @@ export class ProductsController {
     @Param("id") productId: number,
   ) {
     return this.productsService.deleteProduct(productId, userId);
+  }
+
+  @Post("send-image")
+  @UseInterceptors(
+    UploadFileInterceptor("img", {
+      dest: "uploads/products/images/[YYYY]/[MM]",
+    }),
+  )
+  sendImage(@UploadedFile() img: Express.Multer.File) {
+    const image = this.productsService.sendImage(img);
+    console.log(image);
+
+    return plainToInstance(ImageDto, image);
   }
 }

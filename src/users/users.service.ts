@@ -36,6 +36,7 @@ export class UsersService {
         password: hashedPassword,
         role_id,
       },
+      include: { role: true },
     });
     return user;
   }
@@ -48,7 +49,10 @@ export class UsersService {
   }
 
   async getUser(name: string) {
-    const user = await this.prisma.user.findFirst({ where: { name } });
+    const user = await this.prisma.user.findFirst({
+      where: { name },
+      include: { role: true },
+    });
 
     if (!user) {
       throw new NotFoundException("User hasn't been found");
@@ -67,7 +71,11 @@ export class UsersService {
     return user;
   }
 
-  async updateUser(id: number, dto: InputUserDto, photo?: Express.Multer.File) {
+  async updateUser(
+    id: number,
+    dto: Pick<InputUserDto, "email" | "name" | "description">,
+    photo?: Express.Multer.File,
+  ) {
     const oldUser = await this.getUserById(id);
 
     if (oldUser.avatar) {

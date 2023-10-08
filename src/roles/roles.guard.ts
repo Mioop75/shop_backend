@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { FastifyRequest } from "fastify";
+import { Request } from "express";
 import { PrismaService } from "../prisma.service";
 import { ROLES_KEY } from "./roles.decorator";
 import { Role } from "./roles.enum";
@@ -25,7 +25,7 @@ export class RolesGuard implements CanActivate {
 
       const sid = context
         .switchToHttp()
-        .getRequest<FastifyRequest>()
+        .getRequest<Request>()
         .cookies["sid"].split(".")[0];
 
       const session = await this.prisma.user_Sessions.findFirstOrThrow({

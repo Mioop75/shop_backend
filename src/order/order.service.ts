@@ -3,6 +3,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from "@nestjs/common";
+import { Product } from "@prisma/client";
 import * as YooKassa from "yookassa";
 import { PrismaService } from "../prisma.service";
 import { CreateOrderDto } from "./dtos/create-order.dto";
@@ -18,10 +19,31 @@ export class OrderService {
 
   async getMyOrders(userId: number) {
     const orders = await this.prisma.order.findFirst({
-      where: { user_id: userId },
+      where: { userId: userId },
       include: { orders_items: { include: { product: true } } },
     });
     return orders;
+  }
+
+  async createOrder(userId: number, products: Product[]) {
+    const oldOrder = await this.prisma.order.findFirst({
+      where: { userId: userId },
+    });
+
+    const total = products.reduce((accumulator, currentValue) => {
+      return accumulator + currentValue.price;
+    }, 0);
+
+    if (oldOrder) {
+      return await this.prisma.order.update({
+        where: { id: oldOrder.id },
+        data: { total },
+      });
+    }
+
+    return await this.prisma.order.create({
+      data: { userId: userId, total },
+    });
   }
 
   async addCart(userId: number, dto: CreateOrderDto) {
@@ -45,13 +67,7 @@ export class OrderService {
       }
     });
 
-    const total = products.reduce((accumulator, currentValue) => {
-      return accumulator + currentValue.price;
-    }, 0);
-
-    const order = await this.prisma.order.create({
-      data: { user_id: user.id, total },
-    });
+    const order = await this.createOrder(user.id, products);
 
     await this.prisma.order_Item.createMany({
       data: products.map((product) => {
@@ -79,7 +95,7 @@ export class OrderService {
     const user = await this.prisma.user.findFirst({
       where: { id: userId },
       include: {
-        Order: true,
+        orders: true,
       },
     });
 
@@ -88,7 +104,7 @@ export class OrderService {
       include: { orders_items: true },
     });
 
-    if (user.id !== order.user_id) {
+    if (user.id !== order.userId) {
       throw new UnauthorizedException("You aren't logged");
     }
 

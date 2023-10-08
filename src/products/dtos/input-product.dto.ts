@@ -6,4 +6,8 @@ export class InputProductDto extends PickType(ProductDto, [
   "available",
   "description",
   "price",
-] as const) {}
+  "photos",
+  "image",
+] as const) {
+  categories: string[];
+}

@@ -1,5 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
-import { FastifyRequest } from "fastify";
+import { Request } from "express";
 import { PrismaService } from "../prisma.service";
 
 @Injectable()
@@ -8,7 +8,7 @@ export class AuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
-      const request = context.switchToHttp().getRequest<FastifyRequest>();
+      const request = context.switchToHttp().getRequest<Request>();
       const sid = request.cookies["sid"].split(".")[0];
 
       await this.prisma.user_Sessions.findUniqueOrThrow({

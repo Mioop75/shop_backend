@@ -63,7 +63,7 @@ export class UsersController {
   @UseGuards(AuthGuard)
   async updateUser(
     @CurrentUser("id") id: number,
-    @Body() dto: InputUserDto,
+    @Body() dto: Pick<InputUserDto, "email" | "name" | "description">,
     @UploadedFile() photo: Express.Multer.File,
   ) {
     const user = await this.usersService.updateUser(id, dto, photo);

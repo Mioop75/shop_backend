@@ -1,6 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
-
+// Use uuid
 generator client {
   provider = "prisma-client-js"
 }
@@ -24,7 +24,7 @@ model User {
   createdAt     DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime        @updatedAt @db.Timestamptz(3)
   User_Sessions User_Sessions[] @relation("user_session")
-  Order         Order[]
+  orders        Order[]
 }
 
 model Role {
@@ -44,6 +44,7 @@ model User_Sessions {
   sid       String   @unique
   user_id   Int
   createdAt DateTime @default(now()) @db.Timestamptz(3)
+  expires   DateTime @db.Timestamptz(3)
   user      User     @relation("user_session", references: [id], fields: [user_id], onDelete: Cascade)
 }
 
@@ -66,17 +67,17 @@ model Product {
 
 model Category {
   id    Int       @id @default(autoincrement())
-  name  String
+  name  String    @unique
   posts Product[]
 }
 
 model Order {
   id           Int          @id @default(autoincrement())
-  user_id      Int
-  user         User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
   status       Order_Status @default(Pending)
   total        Int
   orders_items Order_Item[]
+  User         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       Int
 }
 
 model Order_Item {

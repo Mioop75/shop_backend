@@ -1,6 +1,7 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Expose } from "class-transformer";
+import { Expose, Type } from "class-transformer";
 import { IsArray, IsNumber, IsOptional, IsString } from "class-validator";
+import { UserDto } from "src/users/dtos/user.dto";
 
 export class ProductDto {
   @Expose()
@@ -30,6 +31,9 @@ export class ProductDto {
   @IsNumber()
   @IsOptional()
   ratings?: number;
+  @Expose()
+  @Type(() => UserDto)
+  author: UserDto;
   @Expose()
   @IsArray()
   @IsOptional()

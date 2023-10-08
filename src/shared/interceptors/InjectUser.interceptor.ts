@@ -1,11 +1,10 @@
-import { FastifyReply } from "fastify";
-
 import {
   CallHandler,
   ExecutionContext,
   Injectable,
   NestInterceptor,
 } from "@nestjs/common";
+import { Request } from "express";
 import { Observable } from "rxjs";
 import { PrismaService } from "src/prisma.service";
 
@@ -17,7 +16,7 @@ export class InjectUserInterceptor implements NestInterceptor {
     context: ExecutionContext,
     next: CallHandler,
   ): Promise<Observable<any>> {
-    const request = context.switchToHttp().getRequest<FastifyReply>();
+    const request = context.switchToHttp().getRequest<Request>();
 
     const sid = request.cookies["sid"].split(".")[0];
     const session = sid
